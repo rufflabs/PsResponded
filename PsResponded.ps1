@@ -38,7 +38,7 @@
     Unregister the Event Source from Event Logs if not used anymore.
 
         PS C:\> .\PsResponded.ps1 -Unregister
-
+ 
 #>
 
 #Requires -Version 5.0
