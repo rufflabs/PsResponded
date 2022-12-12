@@ -1,4 +1,4 @@
-```powershell
+```
 .SYNOPSIS
     Periodically sends LLMNR, NetBIOS requests for a known non-existant
     host. If a response is received, this indicates a potential Responder
