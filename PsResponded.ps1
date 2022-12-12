@@ -29,10 +29,10 @@
 
 .EXAMPLE
     Start sending periodic request, waiting between 7 minutes and 2 hours with a
-    60 second dwell time between requests when a response is received.
+    1200 second dwell time between requests when a response is received.
 
         PS C:\> .\PsResponded.ps1 -Hostname abc123 `
-        >> -MinimumWait 420 -MaximumWait 7200 -DwellTime 60
+        >> -MinimumWait 420 -MaximumWait 7200 -DwellTime 1200
 
 .EXAMPLE
     Unregister the Event Source from Event Logs if not used anymore.
@@ -66,7 +66,7 @@ $EventIdResponded = 5006     # Event ID for when a Responder-esque response is s
 function Test-Administrator {
     <#
     .SYNOPSIS
-    Returns true if the current user has Administrator privileges, false otherwise.
+        Returns true if the current user has Administrator privileges, false otherwise.
     #>
     $CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     (New-Object Security.Principal.WindowsPrincipal $CurrentUser).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
@@ -85,7 +85,7 @@ if($Unregister) {
         Write-Output "Event Source $($EventSource) has been unregistered from Event Logs."
         exit
     }else{
-        Write-Error -Message "Please re-run as Administrator. Unable to remove Event Source without Administrator privileges."
+        Write-Error -Message "Requires run as Administrator. Unable to remove Event Source without Administrator privileges."
         exit
     }
 }
