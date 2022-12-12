@@ -16,6 +16,7 @@ A Kali VM running `Responder` is detected by the `PsResponder` script running on
 The script is intended to be ran as a Scheduled Task, with a SIEM or similar system setup to monitor and alert on the Event ID
 created by the script when a response is detected. 
 
+Included in the repository is an example Scheduled Task xml file that you can import directly into Task Scheduler.
 
 # PowerShell Help
 ```
