@@ -90,6 +90,10 @@ if($Unregister) {
     }
 }
 
+if($DwellTime -lt 1200) {
+    Write-Warning -Message "Setting DwellTime to less than 1200 can result in false positives on subsequent requests due to caching."
+}
+ 
 # Confirm $Hostname doesn't currently exist.
 $Request = Resolve-DnsName -Name $Hostname -LlmnrNetbiosOnly -ErrorAction SilentlyContinue
 
