@@ -1,6 +1,6 @@
 # PsResponded
 This PowerShell script periodically queries LLMNR and NETBIOS for a specified hostname that should not exist on the network. 
-If a response is received, this could indicate a potential spoofing attack via Responder or similar tools that respond to arbitrary
+If a response is received, this could indicate a potential spoofing attack via `Responder` or similar tools that respond to arbitrary
 mDNS queries. 
 
 The script logs the IP that responded to the Event Log (if ran as administrator) and the console. The Event Log entries are formatted to be easily parsed by `Splunk`.
@@ -13,7 +13,7 @@ The query is re-ran at a random interval to attempt to avoid detection of automa
 A Kali VM running `Responder` is detected by the `PsResponder` script running on a Windows VM.
 
 ## Scheduled Task
-The script is intended to be ran as a Scheduled Task, with a SEIM or similar system setup to monitor and alert on the Event ID
+The script is intended to be ran as a Scheduled Task, with a SIEM or similar system setup to monitor and alert on the Event ID
 created by the script when a response is detected. 
 
 
