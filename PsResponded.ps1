@@ -38,7 +38,7 @@
     Unregister the Event Source from Event Logs if not used anymore.
 
         PS C:\> .\PsResponded.ps1 -Unregister
- 
+
 #>
 
 #Requires -Version 5.0
@@ -62,66 +62,69 @@ begin {
     $EventSource = "PsResponded" # Report as this Source in Event Logs
     $EventLog = "Application"    # The Event Log to write to.
     $EventIdMessage = 5005       # Event ID for general messages.
-    $EventIdStopped = 5006       # Event ID for when a listener is shutdown.
-    $EventIdResponded = 5007     # Event ID for when a Responder-esque response is seen.
+    $EventIdResponded = 5006     # Event ID for when a Responder-esque response is seen.
 
-    # Confirm $Hostname doesn't currently exist.
-    $Request = Resolve-DnsName -Name $Hostname -LlmnrNetbiosOnly -ErrorAction SilentlyContinue
-    
-    if($Request) {
-        $SourceIP = ($Request | Select-Object -ExpandProperty IPAddress) -join '|'
-        Write-Error -Message "Indicated hostname '$($Hostname)' is currently resolving to $($SourceIP).`nPsResponded is exiting."
-        exit
-    }
-
-    function Test-Administrator {
-        <#
-        .SYNOPSIS
-            Returns true if the current user has Administrator privileges, false otherwise.
-        #>
-        $CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-        (New-Object Security.Principal.WindowsPrincipal $CurrentUser).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-    }
-
-    if(Test-Administrator) {
-        $IsAdministrator = $true
-    }else{
-        $IsAdministrator = $false
-    }
-
-    if(T$IsAdministrator) {
-        # Setup Event Source if needed
-        if([System.Diagnostics.EventLog]::SourceExists($EventSource)){
-            # If the Event Source is already registered, use the Event Log it's registered to.
-            $EventLog = [System.Diagnostics.EventLog]::LogNameFromSourceName($EventSource,"localhost")
-            Write-Output "Logging to $($EventLog) Event Log as Event Source $($EventSource)."
-        }else{
-            # Register the Event Source to the specified Event Log if it isn't already registered.
-            New-EventLog -LogName $EventLog -Source $EventSource
-            Write-Output "Registered Event Source ($($EventSource)) in Event Log ($($EventLog))"
+    if(-not $Unregister) {
+        # Confirm $Hostname doesn't currently exist.
+        $Request = Resolve-DnsName -Name $Hostname -LlmnrNetbiosOnly -ErrorAction SilentlyContinue
+        
+        if($Request) {
+            $SourceIP = ($Request | Select-Object -ExpandProperty IPAddress) -join '|'
+            Write-Error -Message "Indicated hostname '$($Hostname)' is currently resolving to $($SourceIP).`nPsResponded is exiting."
+            exit
         }
-    }else{
-        Write-Warning -Message "Not running with Administrator privileges. Events will NOT be written to the Event Log!"
-    }
 
-    $Message = "Starting PsResponded requesting LLMNR for hostname: $($Hostname)."
-    if($IsAdministrator) {
-        Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdMessage -EntryType Information
-    }else{
-        Write-Output -InputObject $Message
+        function Test-Administrator {
+            <#
+            .SYNOPSIS
+                Returns true if the current user has Administrator privileges, false otherwise.
+            #>
+            $CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
+            (New-Object Security.Principal.WindowsPrincipal $CurrentUser).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+        }
+    
+        if(Test-Administrator) {
+            $IsAdministrator = $true
+        }else{
+            $IsAdministrator = $false
+        }
+    
+        if($IsAdministrator) {
+            # Setup Event Source if needed
+            if([System.Diagnostics.EventLog]::SourceExists($EventSource)){
+                # If the Event Source is already registered, use the Event Log it's registered to.
+                $EventLog = [System.Diagnostics.EventLog]::LogNameFromSourceName($EventSource,"localhost")
+                Write-Output "Logging to $($EventLog) Event Log as Event Source $($EventSource)."
+            }else{
+                # Register the Event Source to the specified Event Log if it isn't already registered.
+                New-EventLog -LogName $EventLog -Source $EventSource
+                Write-Output "Registered Event Source ($($EventSource)) in Event Log ($($EventLog))"
+            }
+        }else{
+            Write-Warning -Message "Not running with Administrator privileges. Events will NOT be written to the Event Log!"
+        }
+
+        $Message = "Starting PsResponded requesting LLMNR for hostname: $($Hostname)."
+        if($IsAdministrator) {
+            Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdMessage -EntryType Information
+        }else{
+            Write-Output -InputObject $Message
+        }
+        Write-Verbose -Message $Message
     }
-    Write-Verbose -Message $Message
 }
 
 process {
-    if($Unregister -and $IsAdministrator) {
-        # Remove the Event Source registration
-        Remove-EventLog -Source $EventSource
-        Write-Output "Event Source $($EventSource) has been unregistered from Event Logs."
-        exit
-    }else{
-        Write-Error -Message "Please re-run as Administrator. Unable to remove Event Source without Administrator privileges."
-        exit
+    if($Unregister) {
+        if($IsAdministrator) {
+            # Remove the Event Source registration
+            Remove-EventLog -Source $EventSource
+            Write-Output "Event Source $($EventSource) has been unregistered from Event Logs."
+            exit
+        }else{
+            Write-Error -Message "Please re-run as Administrator. Unable to remove Event Source without Administrator privileges."
+            exit
+        }
     }
 
     while($true) {
@@ -148,14 +151,4 @@ process {
             Start-Sleep -Seconds $WaitTime
         }
     }
-}
-
-end {
-    $Message = "Stopping PsResponded."
-    if($IsAdministrator) {
-        Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdStopped -EntryType Information
-    }else{
-        Write-Output -InputObject $Message
-    }
-    Write-Verbose -Message$Message
 }
