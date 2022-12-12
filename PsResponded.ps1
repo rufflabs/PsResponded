@@ -137,7 +137,7 @@ process {
             if($IsAdministrator) {
                 Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdResponded -EntryType Information
             }else{
-                Write-Output -InputObject $Message
+                Write-Output -InputObject "Detected response to mDNS request for $($Hostname) from $($SourceIP)."
             }
                 
             Write-Verbose -Message $Message
