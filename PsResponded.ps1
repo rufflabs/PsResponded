@@ -22,7 +22,10 @@
 
 .PARAMETER DwellTime
     Seconds to wait after receiving a response before another attempt is made.
-    Defaults to 60 seconds. 
+    Defaults to 1200 seconds, which is how long a response is cached. 
+
+    Any shorter than 1200 will result in potential false positive as the result
+    would potentially come from cache.
 
 .EXAMPLE
     Start sending periodic request, waiting between 7 minutes and 2 hours with a
@@ -37,6 +40,9 @@
         PS C:\> .\PsResponded.ps1 -Unregister
 
 #>
+
+#Requires -Version 5.0
+
 [CmdletBinding(DefaultParameterSetName = 'Request')]
 param(
     [parameter(Mandatory = $true,
@@ -47,7 +53,7 @@ param(
     [parameter(ParameterSetName = 'Request')]
     [int]$MaximumWait = 7200,
     [parameter(ParameterSetName = 'Request')]
-    [int]$DwellTime = 60,
+    [int]$DwellTime = 1200,
     [parameter(ParameterSetName = 'Unregister')]
     [switch]$Unregister
 )
@@ -78,6 +84,12 @@ begin {
     }
 
     if(Test-Administrator) {
+        $IsAdministrator = $true
+    }else{
+        $IsAdministrator = $false
+    }
+
+    if(T$IsAdministrator) {
         # Setup Event Source if needed
         if([System.Diagnostics.EventLog]::SourceExists($EventSource)){
             # If the Event Source is already registered, use the Event Log it's registered to.
@@ -89,19 +101,26 @@ begin {
             Write-Output "Registered Event Source ($($EventSource)) in Event Log ($($EventLog))"
         }
     }else{
-        Write-Error -Message "Requires Administrator privileges.`nPlease run this script as Administrator."
+        Write-Warning -Message "Not running with Administrator privileges. Events will NOT be written to the Event Log!"
     }
 
     $Message = "Starting PsResponded requesting LLMNR for hostname: $($Hostname)."
-    Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdMessage -EntryType Information
+    if($IsAdministrator) {
+        Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdMessage -EntryType Information
+    }else{
+        Write-Output -InputObject $Message
+    }
     Write-Verbose -Message $Message
 }
 
 process {
-    if($Unregister) {
+    if($Unregister -and $IsAdministrator) {
         # Remove the Event Source registration
         Remove-EventLog -Source $EventSource
         Write-Output "Event Source $($EventSource) has been unregistered from Event Logs."
+        exit
+    }else{
+        Write-Error -Message "Please re-run as Administrator. Unable to remove Event Source without Administrator privileges."
         exit
     }
 
@@ -112,7 +131,12 @@ process {
             # Response was detected!
             $SourceIP = ($Request | Select-Object -ExpandProperty IPAddress) -join '|'
             $Message = "SourceIP=$($SourceIP);Message=Received response to mDNS request for $($Hostname) from $($SourceIP)."
-            Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdResponded -EntryType Information
+            if($IsAdministrator) {
+                Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdResponded -EntryType Information
+            }else{
+                Write-Output -InputObject $Message
+            }
+                
             Write-Verbose -Message $Message
 
             Start-Sleep -Seconds $DwellTime
@@ -128,6 +152,10 @@ process {
 
 end {
     $Message = "Stopping PsResponded."
-    Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdStopped -EntryType Information
+    if($IsAdministrator) {
+        Write-EventLog -Message $Message -Source $EventSource -LogName $EventLog -EventId $EventIdStopped -EntryType Information
+    }else{
+        Write-Output -InputObject $Message
+    }
     Write-Verbose -Message$Message
 }
